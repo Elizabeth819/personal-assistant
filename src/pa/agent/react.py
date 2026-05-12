@@ -51,12 +51,18 @@ _SYSTEM = (
     '  - {"type":"tap_text","text":"<可见文字>"}    点击屏幕上某段可见文字\n'
     '  - {"type":"tap_xy","x":<int>,"y":<int>}      点击绝对坐标\n'
     '  - {"type":"type_text","text":"<内容>"}        在当前输入框输入\n'
-    '  - {"type":"swipe","direction":"up|down"}     上滑/下滑一屏\n'
+    '  - {"type":"swipe","direction":"up|down|left|right"} 滑动一屏\n'
     '  - {"type":"open_url","url":"<scheme://...>"} 打开 deeplink 或网址\n'
     '  - {"type":"activate_app","bundle_id":"..."} 切换到指定 app\n'
-    "如果目标已经达成,输出 done=true,把要返回给用户的话写在 answer。"
-    "如果当前看不出怎么做,可以先 swipe 探索。"
-    "每一步只做一个动作,不要批量。回答简短。"
+    '  - {"type":"press_home"}                       回到主屏(用于脱困)\n'
+    "通用准则:\n"
+    "  1. 每一步只做一个动作,不要批量。回答简短。\n"
+    "  2. 优先 tap_text(更稳),不确定坐标时不要乱猜 tap_xy。\n"
+    "  3. 如果连续 2 步在同一界面没进展(看历史),换策略:swipe down 退出键盘 / 点'取消'/'完成'/'<' 返回 / press_home 重来。\n"
+    "  4. 看到搜索框已激活但无结果,优先点'取消'按钮或屏幕空白处,而不是按 X 图标。\n"
+    "  5. 如果目标只是查看某个信息(版本号、时间、天气等),看到就立即 done=true,把信息写进 answer,不要继续点。\n"
+    "  6. 如果 4 步内仍找不到入口,考虑 press_home 然后用 open_url 走 deeplink(如 prefs:root=General)。\n"
+    "  7. 目标达成时 done=true,把要返回给用户的中文短句写在 answer。"
 )
 
 

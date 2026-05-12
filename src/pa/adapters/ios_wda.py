@@ -186,15 +186,20 @@ async def type_text(text: str) -> dict[str, Any]:
 async def swipe(direction: str = "up") -> dict[str, Any]:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
-        # window dimensions
         r = await c.get(f"{WDA_BASE}/session/{sid}/window/size")
         sz = _clean_json(r.text)["value"]
         w, h = int(sz["width"]), int(sz["height"])
-        midx = w // 2
+        midx, midy = w // 2, h // 2
         if direction == "up":
-            from_y, to_y = int(h * 0.75), int(h * 0.25)
+            fx, fy, tx, ty = midx, int(h * 0.75), midx, int(h * 0.25)
+        elif direction == "down":
+            fx, fy, tx, ty = midx, int(h * 0.25), midx, int(h * 0.75)
+        elif direction == "left":
+            fx, fy, tx, ty = int(w * 0.8), midy, int(w * 0.2), midy
+        elif direction == "right":
+            fx, fy, tx, ty = int(w * 0.2), midy, int(w * 0.8), midy
         else:
-            from_y, to_y = int(h * 0.25), int(h * 0.75)
+            return {"action": "swipe", "ok": False, "error": f"bad direction {direction}"}
         body = {
             "actions": [
                 {
@@ -202,9 +207,9 @@ async def swipe(direction: str = "up") -> dict[str, Any]:
                     "id": "f",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": midx, "y": from_y},
+                        {"type": "pointerMove", "duration": 0, "x": fx, "y": fy},
                         {"type": "pointerDown", "button": 0},
-                        {"type": "pointerMove", "duration": 300, "x": midx, "y": to_y},
+                        {"type": "pointerMove", "duration": 300, "x": tx, "y": ty},
                         {"type": "pointerUp", "button": 0},
                     ],
                 }
@@ -212,6 +217,14 @@ async def swipe(direction: str = "up") -> dict[str, Any]:
         }
         r = await c.post(f"{WDA_BASE}/session/{sid}/actions", json=body)
         return {"action": "swipe", "direction": direction, "ok": r.status_code == 200}
+
+
+async def press_home() -> dict[str, Any]:
+    """Press the home button (or simulate the home gesture) to escape to springboard."""
+    sid = await _ensure_session()
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{WDA_BASE}/session/{sid}/wda/homescreen", json={})
+        return {"action": "press_home", "ok": r.status_code == 200, "raw": r.text[:200]}
 
 
 async def screenshot_b64() -> str | None:
@@ -278,6 +291,8 @@ async def execute(action: dict[str, Any]) -> dict[str, Any]:
             return await open_url(action["url"])
         if t == "screen_explain":
             return await screen_explain(action.get("instruction", "描述屏幕内容"))
+        if t == "press_home":
+            return await press_home()
     except Exception as exc:
         log.exception("wda.execute_failed", action=action)
         return {"action": t, "ok": False, "error": str(exc)}

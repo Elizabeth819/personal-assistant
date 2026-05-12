@@ -186,6 +186,20 @@ def _parse_swipe(text: str) -> Action | None:
     return None
 
 
+def _parse_react(text: str) -> Action | None:
+    """Route open-ended multi-step phone tasks to the visual ReAct loop.
+
+    Triggers:
+      - explicit '帮我...' / '替我...' / '自动...' phrasing with a phone-side verb
+      - explicit '使用 react / react agent' marker
+    """
+    if re.search(r"(?:react\s*(?:agent|模式)?|自动操作|帮我操作|替我操作|帮我点|替我点|自动完成)", text, re.I):
+        return {"type": "react", "goal": text.strip()}
+    if re.search(r"(帮我|替我|麻烦你)\s*(?:去|把|将|完成|搞定|处理|退|订|买|发|回复|清理)", text):
+        return {"type": "react", "goal": text.strip()}
+    return None
+
+
 def plan_actions(user_text: str, reply_text: str) -> list[Action]:
     """Return a list of iOS-dispatchable actions inferred from the user intent.
 
@@ -194,6 +208,7 @@ def plan_actions(user_text: str, reply_text: str) -> list[Action]:
     The reply text is always spoken last.
     """
     parsers = (
+        _parse_react,
         _parse_screen_explain,
         _parse_weather,
         _parse_dial,

@@ -158,9 +158,14 @@ async def execute(device_udid: str, action: dict[str, Any]) -> dict[str, Any]:
     t = action.get("type")
     if t == "open_app":
         return await open_app(device_udid, action["app"])
-    if t in {"tap_text", "tap_xy", "type_text", "swipe", "open_url", "screen_explain"}:
+    if t in {"tap_text", "tap_xy", "type_text", "swipe", "open_url", "screen_explain", "press_home", "activate_app"}:
         from pa.adapters import ios_wda
         return await ios_wda.execute(action)
+    if t == "react":
+        from pa.agent.react import run as react_run
+        from pa.agent.react import to_dict as react_to_dict
+        res = await react_run(action.get("goal", ""), max_steps=int(action.get("max_steps", 8)))
+        return {"action": "react", "ok": res.success, **react_to_dict(res)}
     if t == "weather":
         from pa.adapters import weather as wx
         return await wx.execute(action)

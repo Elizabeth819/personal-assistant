@@ -173,6 +173,8 @@ def _augment_reply(reply: str, actions: list, results: list) -> str:
             extras.append(str(r["summary"]))
         elif a.get("type") == "screen_explain" and r.get("text"):
             extras.append(str(r["text"]))
+        elif a.get("type") == "react" and r.get("final_answer"):
+            extras.append(str(r["final_answer"]))
     if extras:
         return " ".join(extras)
     return reply
