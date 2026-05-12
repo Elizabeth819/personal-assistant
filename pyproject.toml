@@ -21,6 +21,9 @@ dependencies = [
     "websockets>=16.0",
     "sounddevice>=0.5.5",
     "numpy>=2.4.4",
+    "python-multipart>=0.0.28",
+    "appium-python-client>=4",
+    "zeroconf>=0.140.0",
 ]
 
 [project.optional-dependencies]

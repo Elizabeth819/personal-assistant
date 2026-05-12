@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="助理">
+<link rel="apple-touch-icon" href="/static/icon.png">
+<title>助理</title>
+<style>
+  :root { color-scheme: dark; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#0b0b0d;color:#eee;
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+    overflow:hidden;touch-action:manipulation}
+  #log{position:absolute;top:env(safe-area-inset-top,0);left:0;right:0;bottom:240px;
+    overflow:auto;padding:14px 16px;font-size:15px}
+  .turn{margin:14px 0;padding:10px 12px;border-radius:14px;max-width:88%}
+  .u{background:#2c5cff;margin-left:auto}
+  .a{background:#1f1f24}
+  .meta{font-size:11px;opacity:.55;margin-top:4px;font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+  #bottom{position:absolute;left:0;right:0;bottom:0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom,0));
+    background:linear-gradient(180deg,rgba(11,11,13,0) 0%, #0b0b0d 22%);
+    display:flex;flex-direction:column;gap:10px;align-items:center}
+  #txt{width:100%;background:#1a1a1f;color:#eee;border:1px solid #2a2a30;
+    border-radius:12px;padding:11px 13px;font-size:16px;outline:none}
+  #row{display:flex;gap:10px;width:100%}
+  button{flex:1;font-size:16px;padding:14px 0;border-radius:12px;border:0;
+    background:#2a2a30;color:#eee;font-weight:600}
+  #mic{flex:0 0 84px;width:84px;height:84px;border-radius:50%;
+    background:#2c5cff;color:#fff;font-size:14px;font-weight:700;
+    align-self:center;margin-top:4px;transition:transform .15s, background .15s}
+  #mic.rec{background:#ff3b30;transform:scale(1.08)}
+  #status{font-size:12px;opacity:.6;text-align:center;height:14px}
+</style>
+</head>
+<body>
+<div id="log"></div>
+<div id="bottom">
+  <div id="status">就绪</div>
+  <input id="txt" placeholder="说点什么 / 例: 打开微信" autocomplete="off">
+  <div id="row">
+    <button id="send">发送</button>
+    <button id="autorun" data-on="1">自动执行: 开</button>
+    <button id="reset">清空</button>
+  </div>
+  <button id="mic">按住说话</button>
+</div>
+
+<script>
+const log = document.getElementById('log');
+const txt = document.getElementById('txt');
+const send = document.getElementById('send');
+const mic = document.getElementById('mic');
+const autoBtn = document.getElementById('autorun');
+const status = document.getElementById('status');
+let autorun = true;
+let mr, chunks=[], audioEl;
+
+let sessionId = localStorage.getItem('pa_sid');
+if(!sessionId){
+  sessionId = 's_' + Math.random().toString(36).slice(2,10);
+  localStorage.setItem('pa_sid', sessionId);
+}
+
+function add(role, text, meta){
+  const d = document.createElement('div');
+  d.className = 'turn ' + (role==='u'?'u':'a');
+  d.textContent = text;
+  if(meta){
+    const m = document.createElement('div');
+    m.className = 'meta';
+    m.textContent = meta;
+    d.appendChild(m);
+  }
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function summary(j){
+  const acts = (j.actions||[]).filter(a=>a.type!=='say').map(a=>{
+    if(a.type==='open_app') return '📱 '+a.app;
+    if(a.type==='set_timer') return '⏱ '+a.seconds+'s '+(a.label||'');
+    if(a.type==='play_music') return '🎵 '+(a.query||'');
+    if(a.type==='navigate') return '🧭 '+a.destination;
+    if(a.type==='open_url') return '🔗 '+a.url;
+    if(a.type==='tap_text') return '👆 '+a.text;
+    if(a.type==='type_text') return '⌨️ '+a.text;
+    if(a.type==='swipe') return '↕️ '+a.direction;
+    return a.type;
+  });
+  const dr = (j.device_results||[]);
+  const ok = dr.filter(r=>r.ok).length;
+  const failed = dr.filter(r=>r.ok===false).length;
+  let s = acts.join(' · ');
+  if(dr.length) s += `   [${ok}✓ ${failed}✗]`;
+  return s;
+}
+
+async function sendText(t){
+  if(!t.trim()) return;
+  add('u', t);
+  status.textContent = '思考中…';
+  const fd = new FormData();
+  fd.append('text', t);
+  fd.append('autorun', autorun ? 'true' : 'false');
+  fd.append('session_id', sessionId);
+  try{
+    const r = await fetch('/voice/text', {method:'POST', body:fd});
+    const j = await r.json();
+    add('a', j.reply_text || '(空回复)', summary(j));
+    status.textContent = '就绪';
+  }catch(e){
+    add('a', '错误: '+e.message);
+    status.textContent = '错误';
+  }
+}
+
+async function sendAudio(blob){
+  add('u','🎙 (录音 '+(blob.size/1024).toFixed(1)+'KB)');
+  status.textContent = '识别中…';
+  const fd = new FormData();
+  fd.append('audio', blob, 'rec.m4a');
+  fd.append('autorun', autorun ? 'true' : 'false');
+  fd.append('audio_format','b64');
+  fd.append('session_id', sessionId);
+  try{
+    const r = await fetch('/voice/turn', {method:'POST', body:fd});
+    const j = await r.json();
+    add('a', (j.user_text? '['+j.user_text+'] → ':'') + (j.reply_text||''), summary(j));
+    if(j.audio_wav_b64){
+      audioEl?.pause();
+      audioEl = new Audio('data:audio/wav;base64,'+j.audio_wav_b64);
+      audioEl.play().catch(()=>{});
+    }
+    status.textContent = '就绪';
+  }catch(e){
+    add('a','错误: '+e.message);
+    status.textContent = '错误';
+  }
+}
+
+send.onclick = ()=>{ const t=txt.value; txt.value=''; sendText(t); };
+txt.addEventListener('keydown', e=>{ if(e.key==='Enter'){ send.click(); }});
+
+autoBtn.onclick = ()=>{
+  autorun = !autorun;
+  autoBtn.textContent = '自动执行: ' + (autorun?'开':'关');
+};
+
+document.getElementById('reset').onclick = async ()=>{
+  const fd = new FormData(); fd.append('session_id', sessionId);
+  try{ await fetch('/session/reset', {method:'POST', body:fd}); }catch(e){}
+  log.innerHTML = '';
+  status.textContent = '已清空';
+};
+
+async function startRec(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
+    mr = new MediaRecorder(stream, {mimeType: mime});
+    chunks = [];
+    mr.ondataavailable = e => e.data.size && chunks.push(e.data);
+    mr.onstop = ()=>{
+      const blob = new Blob(chunks, {type: mime});
+      stream.getTracks().forEach(t=>t.stop());
+      sendAudio(blob);
+    };
+    mr.start();
+    mic.classList.add('rec');
+    mic.textContent = '松开发送';
+    status.textContent = '录音中';
+  }catch(e){
+    status.textContent = '麦克风: '+e.message;
+  }
+}
+function stopRec(){
+  if(mr && mr.state !== 'inactive'){ mr.stop(); }
+  mic.classList.remove('rec');
+  mic.textContent = '按住说话';
+}
+mic.addEventListener('touchstart', e=>{e.preventDefault();startRec();});
+mic.addEventListener('touchend',   e=>{e.preventDefault();stopRec();});
+mic.addEventListener('mousedown',  startRec);
+mic.addEventListener('mouseup',    stopRec);
+mic.addEventListener('mouseleave', stopRec);
+</script>
+</body>
+</html>

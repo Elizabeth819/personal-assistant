@@ -34,10 +34,15 @@ class Settings(BaseSettings):
     azure_openai_api_key: str = ""
     azure_openai_api_version: str = "2024-10-01-preview"
     azure_realtime_deployment: str = "gpt-4o-realtime-preview"
+    azure_chat_deployment: str = "gpt-4.1"
+    azure_whisper_deployment: str = "whisper"
 
     tasker_webhook: str = ""
     ios_shortcuts_webhook: str = ""
     wechat_gateway_url: str = ""
+
+    ios_device_udid: str = ""
+    ios_device_autorun: bool = False
 
 
 @lru_cache

@@ -43,3 +43,9 @@ data/
 
 # Claude
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Local notes / scratch (don't push)
+foundry-*.md
+*-诊断报告.md
+AGENTS.md
