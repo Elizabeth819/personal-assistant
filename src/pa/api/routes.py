@@ -13,6 +13,8 @@ from pa.adapters import ios_devicectl
 from pa.adapters.echo import EchoExecutor
 from pa.agent import session as conv
 from pa.agent.intent import plan_actions
+from pa.agent.react import run as react_run
+from pa.agent.react import to_dict as react_to_dict
 from pa.core import get_settings
 from pa.executor.base import Action, ActionResult
 from pa.memory.rag import RagStore
@@ -202,3 +204,13 @@ async def rag_search(q: str, top_k: int = 4) -> JSONResponse:
 @router.get("/rag/stats")
 async def rag_stats() -> JSONResponse:
     return JSONResponse({"count": _rag.count()})
+
+
+@router.post("/react/run")
+async def react_endpoint(
+    goal: str = Form(...),
+    max_steps: int = Form(default=8),
+) -> JSONResponse:
+    """Run the visual ReAct loop on the connected iPhone."""
+    res = await react_run(goal, max_steps=max_steps)
+    return JSONResponse(react_to_dict(res))
