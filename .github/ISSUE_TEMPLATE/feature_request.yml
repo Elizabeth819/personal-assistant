@@ -1,0 +1,18 @@
+name: Feature request
+description: Suggest a new capability for the agent
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What pain point does this solve?
+    validations: { required: true }
+  - type: textarea
+    id: utterance
+    attributes:
+      label: Example user utterance
+      placeholder: "提醒我每天早上8点喝水"
+  - type: textarea
+    id: design
+    attributes:
+      label: Proposed design (optional)

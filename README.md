@@ -13,6 +13,9 @@ Ask *"北京明天天气怎么样"* — it answers. Then *"那后天呢"* — co
 [![Azure OpenAI](https://img.shields.io/badge/Azure_OpenAI-0078D4.svg)](https://azure.microsoft.com/products/ai-services/openai-service)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![tests](https://img.shields.io/badge/tests-18%2F18%20passing-brightgreen.svg)](tests/)
+[![CI](https://github.com/Elizabeth819/personal-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/Elizabeth819/personal-assistant/actions/workflows/ci.yml)
+
+<img src="docs/img/pwa-demo.png" width="280" alt="PWA demo" />
 
 </div>
 
@@ -27,8 +30,7 @@ A complete voice → intent → device-action loop running on **your own infra**
       ↓ HTTPS
 🧠  FastAPI server (LAN, mDNS pa-agent.local)
       ├─ Whisper      (ASR)
-      ├─ GPT-4         (chat with multi-turn memory)
-      ├─ GPT-4V        (screen understanding)
+      ├─ GPT-4.1       (chat with multi-turn memory + screen vision)
       ├─ Realtime TTS  (Azure WS, alloy voice)
       └─ Intent planner → action chain
                 ↓
