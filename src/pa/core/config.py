@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     azure_realtime_deployment: str = "gpt-4o-realtime-preview"
     azure_chat_deployment: str = "gpt-4.1"
     azure_whisper_deployment: str = "whisper"
+    azure_embedding_deployment: str = "text-embedding-3-small"
+
+    rag_enabled: bool = True
+    rag_top_k: int = 4
+    rag_min_score: float = 0.25
 
     tasker_webhook: str = ""
     ios_shortcuts_webhook: str = ""

@@ -15,12 +15,27 @@ from pa.agent import session as conv
 from pa.agent.intent import plan_actions
 from pa.core import get_settings
 from pa.executor.base import Action, ActionResult
+from pa.memory.rag import RagStore
 from pa.memory.store import MemoryRecord, MemoryStore
 from pa.voice.azure_openai import chat_reply, synthesize_to_wav, transcribe_audio
 
 router = APIRouter()
 _memory = MemoryStore()
 _echo = EchoExecutor()
+_rag = RagStore()
+
+
+async def _rag_context(query: str) -> str | None:
+    s = get_settings()
+    if not s.rag_enabled or not s.azure_openai_api_key:
+        return None
+    try:
+        hits = await _rag.search(query, top_k=s.rag_top_k, min_score=s.rag_min_score)
+    except Exception:
+        return None
+    if not hits:
+        return None
+    return "\n".join(f"- ({h.score:.2f}) {h.text}" for h in hits)
 
 
 class HealthResponse(BaseModel):
@@ -65,7 +80,8 @@ async def voice_turn(
     raw = await audio.read()
     user_text = await transcribe_audio(raw, filename=audio.filename or "audio.m4a")
     history = conv.get_history(session_id)
-    reply_text = await chat_reply(user_text, system=system, history=history)
+    ctx = await _rag_context(user_text)
+    reply_text = await chat_reply(user_text, system=system, history=history, rag_context=ctx)
     actions = plan_actions(user_text, reply_text)
 
     s = get_settings()
@@ -112,7 +128,8 @@ async def voice_text(
 ) -> JSONResponse:
     """Text-only path (skip ASR) — useful for testing the planner from a phone keyboard."""
     history = conv.get_history(session_id)
-    reply_text = await chat_reply(text, system=system, history=history)
+    ctx = await _rag_context(text)
+    reply_text = await chat_reply(text, system=system, history=history, rag_context=ctx)
     actions = plan_actions(text, reply_text)
     s = get_settings()
     do_run = s.ios_device_autorun if autorun is None else autorun
@@ -162,3 +179,26 @@ def _augment_reply(reply: str, actions: list, results: list) -> str:
 @router.get("/devices")
 async def list_devices() -> JSONResponse:
     return JSONResponse({"devices": await ios_devicectl.list_devices()})
+
+
+class RagAddRequest(BaseModel):
+    id: str
+    text: str
+    tags: list[str] = []
+
+
+@router.post("/rag/add")
+async def rag_add(req: RagAddRequest) -> JSONResponse:
+    await _rag.add(req.id, req.text, req.tags)
+    return JSONResponse({"ok": True, "count": _rag.count()})
+
+
+@router.get("/rag/search")
+async def rag_search(q: str, top_k: int = 4) -> JSONResponse:
+    hits = await _rag.search(q, top_k=top_k, min_score=0.0)
+    return JSONResponse({"hits": [h.__dict__ for h in hits]})
+
+
+@router.get("/rag/stats")
+async def rag_stats() -> JSONResponse:
+    return JSONResponse({"count": _rag.count()})

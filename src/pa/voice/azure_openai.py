@@ -49,6 +49,7 @@ async def chat_reply(
     *,
     system: str | None = None,
     history: list[dict[str, str]] | None = None,
+    rag_context: str | None = None,
 ) -> str:
     s = get_settings()
     url = _rest_url(s.azure_chat_deployment, "chat/completions")
@@ -60,6 +61,12 @@ async def chat_reply(
         "回复尽量短，1-2 句话，自然口语，**默认假设动作已经在执行**。"
         "对话有上下文,'那后天呢'、'再来一首'、'继续'指代前一轮的话题。"
     )
+    if rag_context:
+        sys_msg += (
+            "\n\n以下是从用户的私人知识库中检索到的相关记忆，"
+            "如果对回答有帮助就用它，否则忽略；不要把记忆原文复述给用户：\n"
+            f"{rag_context}"
+        )
     msgs: list[dict[str, str]] = [{"role": "system", "content": sys_msg}]
     if history:
         msgs.extend(history)
