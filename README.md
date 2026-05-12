@@ -2,10 +2,16 @@
 
 # 🤖 personal-assistant
 
-**A voice-driven AI agent that actually controls your iPhone.**
+### The first open-source, self-hosted, **Chinese-app-native** voice agent for iPhone.
 
-Hold the mic, say *"打开淘宝搜 AirPods"* — your phone does it.<br/>
+Hold the mic. Say *"打开淘宝搜 AirPods"* — your phone does it.<br/>
 Ask *"北京明天天气怎么样"* — it answers. Then *"那后天呢"* — context preserved.
+
+> Existing options either don't speak Chinese app deeplinks (Apple Intelligence, Siri Shortcuts),
+> require dedicated hardware (Rabbit R1, Humane), or are research demos with no voice loop
+> (Mobile-Agent, AppAgent).
+> **This is the first end-to-end voice → LLM → iPhone loop tuned for the 中国 app ecosystem
+> — running entirely on your own Azure OpenAI subscription, your own LAN, your own keys.**
 
 [![python](https://img.shields.io/badge/python-3.11+-3776ab.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
@@ -20,6 +26,16 @@ Ask *"北京明天天气怎么样"* — it answers. Then *"那后天呢"* — co
 </div>
 
 ---
+
+## How it compares
+
+| | Voice-in | Chinese app deeplinks | Self-hosted | Open source | Multi-turn ctx | No new hardware |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **personal-assistant (this)** | ✅ | ✅ 15+ | ✅ | ✅ MIT | ✅ | ✅ |
+| Apple Intelligence / Siri | ✅ | ❌ | ❌ | ❌ | partial | ✅ |
+| Rabbit R1 / Humane Pin | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Mobile-Agent / AppAgent (research) | ❌ text only | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Auto-GPT / OpenInterpreter | ❌ | ❌ | ✅ | ✅ | ✅ | n/a |
 
 ## What it does
 
