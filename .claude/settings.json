@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./ingest/scan.sh)",
+      "Bash(./ingest/batch.sh:*)",
+      "Bash(./ingest/run_batch.sh:*)",
+      "Bash(chmod +x ingest/*.sh)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(cat manifests/summary.txt)",
+      "Bash(cat manifests/batch_*)",
+      "Bash(lsof -i :4142*)",
+      "Bash(lsof -i :37701*)",
+      "Bash(tar -czf snapshots/*)",
+      "Read(//Users/wanmeng/repository/personal-assistant/**)",
+      "Read(//Users/wanmeng/.claude/plugins/data/claude-mem-thedotmack/**)"
+    ],
+    "deny": [
+      "Read(//Users/wanmeng/**/.env)",
+      "Read(//Users/wanmeng/**/*.key)",
+      "Read(//Users/wanmeng/**/*.pem)",
+      "Read(//Users/wanmeng/**/id_rsa*)"
+    ]
+  }
+}

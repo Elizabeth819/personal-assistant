@@ -1,0 +1,24 @@
+# 知识源白名单 - 每行一个目录（# 开头是注释）
+# 喂给 claude-mem 之前请按需勾选/删除。每行 = 一个被扫描的根目录。
+
+# === 笔记/文档（建议优先）===
+~/Documents
+~/Desktop
+
+# === 代码仓库 ===
+~/repository
+
+# === 移动盘 / iCloud（按需启用）===
+# ~/Library/Mobile Documents/com~apple~CloudDocs
+# ~/Library/Mobile Documents/iCloud~md~obsidian
+
+# === 其他可能位置（如存在再启用）===
+# ~/Notes
+# ~/Obsidian
+# ~/code
+# ~/projects
+# ~/Downloads     # 通常含太多临时文件，不建议全扫
+
+# === 明确排除（在每个根目录里也会跳过这些子目录）===
+# .git, node_modules, .venv, venv, __pycache__, .next, .nuxt, dist, build,
+# target, .gradle, .DS_Store, Library, .cache, .Trash
