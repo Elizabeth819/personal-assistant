@@ -56,5 +56,21 @@ def talk(no_voice: bool = typer.Option(False, "--no-voice", help="Disable TTS"))
     run_repl(voice=not no_voice)
 
 
+@app.command()
+def voice(
+    instructions: str = typer.Option(
+        "你是一个简洁的中文语音助手。回复尽量短，1-2句话。",  # noqa: RUF001
+        "--instructions",
+        "-i",
+    ),
+) -> None:
+    """Realtime voice loop via Azure OpenAI (mic → model → speaker)."""
+    import asyncio
+
+    from pa.voice.realtime import run_realtime
+
+    asyncio.run(run_realtime(instructions=instructions))
+
+
 if __name__ == "__main__":
     app()

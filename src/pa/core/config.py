@@ -30,6 +30,11 @@ class Settings(BaseSettings):
 
     claude_mem_dir: Path = Path.home() / ".claude/plugins/data/claude-mem-thedotmack"
 
+    azure_openai_endpoint: str = ""
+    azure_openai_api_key: str = ""
+    azure_openai_api_version: str = "2024-10-01-preview"
+    azure_realtime_deployment: str = "gpt-4o-realtime-preview"
+
     tasker_webhook: str = ""
     ios_shortcuts_webhook: str = ""
     wechat_gateway_url: str = ""

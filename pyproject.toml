@@ -18,6 +18,9 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "sqlalchemy>=2.0.35",
     "aiosqlite>=0.20.0",
+    "websockets>=16.0",
+    "sounddevice>=0.5.5",
+    "numpy>=2.4.4",
 ]
 
 [project.optional-dependencies]
