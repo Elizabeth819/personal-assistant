@@ -71,6 +71,7 @@ A complete voice → intent → device-action loop running on **your own infra**
 | ⏱ | **Timer / reminder** | "5分钟后提醒我" |
 | 🔗 | **Multi-step chains** | "打开淘宝**然后**搜 iPhone 壳" |
 | 💬 | **Multi-turn context** | "明天天气" → "**那后天呢?**" |
+| 🧠 | **Personal RAG memory** | "我女朋友几号生日?" / "帮我推荐午餐 注意我的过敏" |
 | 📲 | **Mobile PWA** | Add-to-Home-Screen, hold-to-talk, dark UI |
 | 🌐 | **Zero config networking** | mDNS + auto LAN-IP detection |
 
