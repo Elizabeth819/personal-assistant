@@ -48,5 +48,13 @@ def serve(
     )
 
 
+@app.command()
+def talk(no_voice: bool = typer.Option(False, "--no-voice", help="Disable TTS")) -> None:
+    """Interactive REPL: type → Claude reply → spoken aloud (macOS `say`)."""
+    from pa.agent import run_repl
+
+    run_repl(voice=not no_voice)
+
+
 if __name__ == "__main__":
     app()
