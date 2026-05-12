@@ -63,13 +63,14 @@ def voice(
         "--instructions",
         "-i",
     ),
+    visual: bool = typer.Option(False, "--visual", "-v", help="Live UI dashboard"),
 ) -> None:
     """Realtime voice loop via Azure OpenAI (mic → model → speaker)."""
     import asyncio
 
     from pa.voice.realtime import run_realtime
 
-    asyncio.run(run_realtime(instructions=instructions))
+    asyncio.run(run_realtime(instructions=instructions, visual=visual))
 
 
 if __name__ == "__main__":
