@@ -2,12 +2,12 @@
 
 # 🤖 personal-assistant
 
-### The first open-source, self-hosted, **Chinese-app-native** voice agent for iPhone.
+### The first open-source, self-hosted voice agent that actually drives your iPhone — built for the **中国 app ecosystem**.
 
 Hold the mic. Say *"打开淘宝搜 AirPods"* — your phone does it.<br/>
 Ask *"北京明天天气怎么样"* — it answers. Then *"那后天呢"* — context preserved.
 
-> Existing options either don't speak Chinese app deeplinks (Apple Intelligence, Siri Shortcuts),
+> Existing options either can't drive Chinese apps by voice (Apple Intelligence, Siri Shortcuts),
 > require dedicated hardware (Rabbit R1, Humane), or are research demos with no voice loop
 > (Mobile-Agent, AppAgent).
 > **This is the first end-to-end voice → LLM → iPhone loop tuned for the 中国 app ecosystem
@@ -29,7 +29,7 @@ Ask *"北京明天天气怎么样"* — it answers. Then *"那后天呢"* — co
 
 ## How it compares
 
-| | Voice-in | Chinese app deeplinks | Self-hosted | Open source | Multi-turn ctx | No new hardware |
+| | Voice-in | Drives Chinese apps | Self-hosted | Open source | Multi-turn ctx | No new hardware |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | **personal-assistant (this)** | ✅ | ✅ 15+ | ✅ | ✅ MIT | ✅ | ✅ |
 | Apple Intelligence / Siri | ✅ | ❌ | ❌ | ❌ | partial | ✅ |
@@ -62,7 +62,7 @@ A complete voice → intent → device-action loop running on **your own infra**
 | | Feature | Try saying |
 |---|---|---|
 | 📱 | **Open any app** | "打开微信 / 京东 / 小红书" |
-| 🔍 | **Search inside apps** (15+ deeplinks) | "淘宝搜 AirPods Pro" / "B站搜原神" |
+| 🔍 | **Search inside apps** (15+ apps) | "淘宝搜 AirPods Pro" / "B站搜原神" |
 | 📞 | **Phone calls** | "打电话给 13812345678" |
 | 🌦 | **Weather (real data)** | "上海周末会下雨吗" |
 | 👁 | **Screen vision** | "看看我屏幕上写的什么" |
