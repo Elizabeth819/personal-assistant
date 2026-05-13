@@ -166,6 +166,25 @@ async def execute(device_udid: str, action: dict[str, Any]) -> dict[str, Any]:
         from pa.agent.react import to_dict as react_to_dict
         res = await react_run(action.get("goal", ""), max_steps=int(action.get("max_steps", 8)))
         return {"action": "react", "ok": res.success, **react_to_dict(res)}
+    if t == "skill":
+        from pa.agent import skills as sk
+        try:
+            skill, sub_actions = sk.expand(action["name"], **action.get("args", {}))
+        except KeyError:
+            return {"action": "skill", "ok": False, "error": f"unknown skill {action.get('name')}"}
+        if skill.sensitive and not action.get("confirmed"):
+            return {
+                "action": "skill",
+                "ok": False,
+                "needs_confirmation": True,
+                "skill": skill.name,
+                "prompt": f"这个操作({skill.description})涉及敏感动作,需要你口头确认后再执行。",
+            }
+        sub_results = []
+        from pa.adapters import ios_wda
+        for sub in sub_actions:
+            sub_results.append(await ios_wda.execute(sub))
+        return {"action": "skill", "skill": skill.name, "ok": all(r.get("ok") for r in sub_results), "results": sub_results}
     if t == "weather":
         from pa.adapters import weather as wx
         return await wx.execute(action)

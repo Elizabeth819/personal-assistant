@@ -1,11 +1,12 @@
-"""WebDriverAgent HTTP client — drives a USB-tethered iPhone via tap/type/swipe.
+"""WebDriverAgent HTTP client — drives an iPhone via tap/type/swipe.
 
-Requires:
-  - WDA runner installed on device (com.wanmeng.WebDriverAgentRunner)
-  - `xcodebuild test-without-building` running in background to host the WDA HTTP server
-  - `iproxy 8100 8100 -u <udid>` forwarding device:8100 → mac:8100
+Connection modes (set PA_WDA_BASE_URL in .env):
+  - USB:  http://127.0.0.1:8100  (default; needs `iproxy 8100 8100` from Mac)
+  - LAN:  http://<iphone-lan-ip>:8100  (no Mac required after WDA boot;
+                                         needs xcodebuild test triggered once)
 
-Then this module talks plain HTTP to http://127.0.0.1:8100.
+WDA itself runs on the iPhone via xcodebuild test on a Mac. After it's up
+the Mac can be disconnected as long as iOS doesn't kill the test host.
 """
 
 from __future__ import annotations
@@ -16,12 +17,16 @@ from typing import Any
 
 import httpx
 
-from pa.core import get_logger
+from pa.core import get_logger, get_settings
 
 log = get_logger(__name__)
 
 
-WDA_BASE = "http://127.0.0.1:8100"
+def _base() -> str:
+    return get_settings().wda_base_url.rstrip("/")
+
+
+WDA_BASE = "http://127.0.0.1:8100"  # legacy module-level default; runtime uses _base()
 _session_id: str | None = None
 
 
@@ -35,14 +40,14 @@ async def _ensure_session(bundle_id: str | None = None) -> str:
     global _session_id
     async with httpx.AsyncClient(timeout=30) as c:
         if _session_id:
-            r = await c.get(f"{WDA_BASE}/session/{_session_id}")
+            r = await c.get(f"{_base()}/session/{_session_id}")
             if r.status_code == 200:
                 return _session_id
         caps: dict[str, Any] = {}
         if bundle_id:
             caps["bundleId"] = bundle_id
         r = await c.post(
-            f"{WDA_BASE}/session",
+            f"{_base()}/session",
             json={"capabilities": {"alwaysMatch": caps}},
         )
         r.raise_for_status()
@@ -53,7 +58,7 @@ async def _ensure_session(bundle_id: str | None = None) -> str:
 
 async def status() -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=10) as c:
-        r = await c.get(f"{WDA_BASE}/status")
+        r = await c.get(f"{_base()}/status")
         r.raise_for_status()
         return _clean_json(r.text)
 
@@ -62,7 +67,7 @@ async def activate_app(bundle_id: str) -> dict[str, Any]:
     sid = await _ensure_session(bundle_id)
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(
-            f"{WDA_BASE}/session/{sid}/wda/apps/launch",
+            f"{_base()}/session/{sid}/wda/apps/launch",
             json={"bundleId": bundle_id},
         )
         return {"ok": r.status_code == 200, "raw": r.text[:200]}
@@ -71,7 +76,7 @@ async def activate_app(bundle_id: str) -> dict[str, Any]:
 async def page_source() -> str:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.get(f"{WDA_BASE}/session/{sid}/source")
+        r = await c.get(f"{_base()}/session/{sid}/source")
         r.raise_for_status()
         return _clean_json(r.text)["value"]  # type: ignore[no-any-return]
 
@@ -80,7 +85,7 @@ async def find_element(strategy: str, value: str) -> str | None:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(
-            f"{WDA_BASE}/session/{sid}/element",
+            f"{_base()}/session/{sid}/element",
             json={"using": strategy, "value": value},
         )
         if r.status_code != 200:
@@ -109,7 +114,7 @@ async def tap_element(element_id: str) -> dict[str, Any]:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(
-            f"{WDA_BASE}/session/{sid}/element/{element_id}/click",
+            f"{_base()}/session/{sid}/element/{element_id}/click",
             json={},
         )
         return {"ok": r.status_code == 200, "raw": r.text[:200]}
@@ -169,7 +174,7 @@ async def tap_xy(x: int, y: int) -> dict[str, Any]:
         ]
     }
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.post(f"{WDA_BASE}/session/{sid}/actions", json=body)
+        r = await c.post(f"{_base()}/session/{sid}/actions", json=body)
         return {"action": "tap_xy", "x": x, "y": y, "ok": r.status_code == 200, "raw": r.text[:200]}
 
 
@@ -177,7 +182,7 @@ async def type_text(text: str) -> dict[str, Any]:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(
-            f"{WDA_BASE}/session/{sid}/wda/keys",
+            f"{_base()}/session/{sid}/wda/keys",
             json={"value": list(text)},
         )
         return {"action": "type_text", "ok": r.status_code == 200, "raw": r.text[:200]}
@@ -186,7 +191,7 @@ async def type_text(text: str) -> dict[str, Any]:
 async def swipe(direction: str = "up") -> dict[str, Any]:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.get(f"{WDA_BASE}/session/{sid}/window/size")
+        r = await c.get(f"{_base()}/session/{sid}/window/size")
         sz = _clean_json(r.text)["value"]
         w, h = int(sz["width"]), int(sz["height"])
         midx, midy = w // 2, h // 2
@@ -215,7 +220,7 @@ async def swipe(direction: str = "up") -> dict[str, Any]:
                 }
             ]
         }
-        r = await c.post(f"{WDA_BASE}/session/{sid}/actions", json=body)
+        r = await c.post(f"{_base()}/session/{sid}/actions", json=body)
         return {"action": "swipe", "direction": direction, "ok": r.status_code == 200}
 
 
@@ -223,14 +228,14 @@ async def press_home() -> dict[str, Any]:
     """Press the home button (or simulate the home gesture) to escape to springboard."""
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.post(f"{WDA_BASE}/session/{sid}/wda/homescreen", json={})
+        r = await c.post(f"{_base()}/session/{sid}/wda/homescreen", json={})
         return {"action": "press_home", "ok": r.status_code == 200, "raw": r.text[:200]}
 
 
 async def screenshot_b64() -> str | None:
     sid = await _ensure_session()
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.get(f"{WDA_BASE}/session/{sid}/screenshot")
+        r = await c.get(f"{_base()}/session/{sid}/screenshot")
         if r.status_code != 200:
             return None
         return _clean_json(r.text).get("value")  # type: ignore[no-any-return]
@@ -251,7 +256,7 @@ async def open_url(url: str) -> dict[str, Any]:
     sid = await _ensure_session("com.apple.mobilesafari")
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(
-            f"{WDA_BASE}/session/{sid}/url",
+            f"{_base()}/session/{sid}/url",
             json={"url": url},
         )
         return {"action": "open_url", "url": url, "ok": r.status_code == 200, "raw": r.text[:200]}

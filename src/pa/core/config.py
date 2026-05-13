@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     ios_device_udid: str = ""
     ios_device_autorun: bool = False
+    wda_base_url: str = "http://127.0.0.1:8100"
 
 
 @lru_cache
