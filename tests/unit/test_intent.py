@@ -63,3 +63,20 @@ def test_chain_open_then_search():
 def test_screen_explain():
     acts = plan_actions("帮我看看屏幕上是什么", "好")
     assert any(a["type"] == "screen_explain" for a in acts)
+
+
+def test_react_routing_explicit():
+    acts = plan_actions("用 react agent 帮我把京东购物车清空", "好")
+    assert any(a["type"] == "react" for a in acts)
+
+
+def test_react_routing_implicit_help():
+    acts = plan_actions("帮我退掉昨天那笔京东订单", "好")
+    assert any(a["type"] == "react" for a in acts)
+
+
+def test_react_not_triggered_for_simple_open():
+    acts = plan_actions("打开微信", "好")
+    types = [a["type"] for a in acts]
+    assert "react" not in types
+    assert "open_app" in types

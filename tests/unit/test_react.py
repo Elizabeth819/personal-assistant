@@ -73,3 +73,35 @@ def test_extract_json_strips_markdown() -> None:
     assert r._extract_json('```json\n{"a":1}\n```') == {"a": 1}
     assert r._extract_json('plain {"x": 2} trailing') == {"x": 2}
     assert r._extract_json("not json at all") is None
+
+
+@pytest.mark.asyncio
+async def test_react_stuck_triggers_press_home(monkeypatch: pytest.MonkeyPatch) -> None:
+    """3x same action in a row should auto-inject press_home rescue."""
+    async def fake_shot() -> str:
+        return "S"
+
+    same = {"type": "tap_text", "text": "卡住的按钮"}
+    decisions = iter([
+        {"thought": "t1", "action": same, "done": False},
+        {"thought": "t2", "action": same, "done": False},
+        {"thought": "t3", "action": same, "done": False},
+        {"thought": "fresh", "action": None, "done": True, "answer": "好了"},
+    ])
+
+    async def fake_ask(goal: str, shot: str, hist: str) -> dict[str, Any]:
+        return next(decisions)
+
+    executed: list[dict[str, Any]] = []
+
+    async def fake_exec(action: dict[str, Any]) -> dict[str, Any]:
+        executed.append(action)
+        return {"ok": True}
+
+    monkeypatch.setattr(r.ios_wda, "screenshot_b64", fake_shot)
+    monkeypatch.setattr(r.ios_wda, "execute", fake_exec)
+    monkeypatch.setattr(r, "_ask_vlm", fake_ask)
+
+    run = await r.run("test", max_steps=8)
+    assert any(a.get("type") == "press_home" for a in executed)
+    assert run.success is True

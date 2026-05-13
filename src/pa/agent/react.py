@@ -115,6 +115,7 @@ async def _ask_vlm(goal: str, screenshot_b64: str, history: str) -> dict[str, An
 async def run(goal: str, *, max_steps: int = 10) -> ReactRun:
     run = ReactRun(goal=goal)
     history_lines: list[str] = []
+    recent_actions: list[str] = []
 
     for step in range(1, max_steps + 1):
         shot = await ios_wda.screenshot_b64()
@@ -155,6 +156,22 @@ async def run(goal: str, *, max_steps: int = 10) -> ReactRun:
                 ReactStep(step, thought, action, None, True, "模型没给出有效 action")
             )
             return run
+
+        sig = f"{action.get('type')}:{action.get('text') or action.get('url') or action.get('direction') or ''}"
+        recent_actions.append(sig)
+        if len(recent_actions) >= 3 and recent_actions[-1] == recent_actions[-2] == recent_actions[-3]:
+            log.warning("react.stuck_detected", sig=sig)
+            rescue = {"type": "press_home"}
+            try:
+                rescue_result = await ios_wda.execute(rescue)
+            except Exception as exc:
+                rescue_result = {"ok": False, "error": str(exc)}
+            run.steps.append(
+                ReactStep(step, f"stuck on {sig} — auto press_home", rescue, rescue_result, False, None)
+            )
+            history_lines.append(f"step{step}: 卡住 → press_home(自动脱困) → ok")
+            recent_actions.clear()
+            continue
 
         try:
             result = await ios_wda.execute(action)
